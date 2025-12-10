@@ -1,0 +1,14 @@
+{
+  "title": "Effortlessly Festive: Simple Nail Ideas That Don't Require a Pro",
+  "slug": "effortlessly-festive-simple-nail-ideas",
+  "excerpt": "Discover easy DIY nail art ideas that look professional without the salon price tag.",
+  "content": "$(cat src/effortlessly_festive__simple_nail_ideas_that_don_t_require_a_pro.html | jq -Rs . | cut -c 2- | rev | cut -c 2- | rev)",
+  "category": "beauty",
+  "created_at": "now()",
+  "is_published": true,
+  "image_url": "https://example.com/path/to/nail-art-image.jpg",
+  "author": "The Daily Knowledge",
+  "views": 0,
+  "likes": 0,
+  "shares": 0
+}

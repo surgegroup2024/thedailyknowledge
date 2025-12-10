@@ -8,6 +8,27 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 
+const isLikelyHtml = (s) => typeof s === 'string' && /<\/?[a-z][\s\S]*>/i.test(s);
+
+const sanitizeHtml = (html) => {
+  const t = document.createElement('template');
+  t.innerHTML = html || '';
+  const removeNodes = t.content.querySelectorAll('script, iframe, object, embed, link, meta');
+  removeNodes.forEach((el) => el.remove());
+  const walk = (node) => {
+    if (node.nodeType === 1) {
+      const attrs = Array.from(node.attributes);
+      for (const a of attrs) {
+        const n = a.name.toLowerCase();
+        if (n.startsWith('on')) node.removeAttribute(a.name);
+      }
+      node.childNodes.forEach(walk);
+    }
+  };
+  t.content.childNodes.forEach(walk);
+  return t.innerHTML;
+};
+
 const ArticlePage = () => {
   const { id } = useParams();
   const { toast } = useToast();
@@ -178,11 +199,15 @@ const ArticlePage = () => {
                 <p className="lead text-xl text-[#2C2C2C]/90 font-medium italic mb-8 border-l-4 border-[#C97C5C] pl-4">
                   {article.excerpt}
                 </p>
-                {article.content.split('\n\n').map((paragraph, idx) => (
-                  <p key={idx} className="mb-6 whitespace-pre-line leading-relaxed">
-                    {paragraph.trim()}
-                  </p>
-                ))}
+                {article.content && isLikelyHtml(article.content) ? (
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
+                ) : (
+                  (article.content || '').split('\n\n').map((paragraph, idx) => (
+                    <p key={idx} className="mb-6 whitespace-pre-line leading-relaxed">
+                      {paragraph.trim()}
+                    </p>
+                  ))
+                )}
              </div>
           </div>
 
