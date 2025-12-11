@@ -29,8 +29,18 @@ const sanitizeHtml = (html) => {
   return t.innerHTML;
 };
 
+// Generate URL-friendly slug from title
+export const generateSlug = (title) => {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-')          // Replace spaces with hyphens
+    .replace(/-+/g, '-')           // Remove consecutive hyphens
+    .replace(/^-|-$/g, '');        // Remove leading/trailing hyphens
+};
+
 const ArticlePage = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const { toast } = useToast();
   
   const [article, setArticle] = useState(null);
@@ -43,27 +53,66 @@ const ArticlePage = () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch Main Article
-        const { data: articleData, error: articleError } = await supabase
+        // Fetch all published articles and find by matching slug
+        const { data: allArticles, error: fetchError } = await supabase
           .from('articles')
-          .select('*')
-          .eq('id', id)
-          .single();
+          .select(`
+            *,
+            article_content (
+              html_content,
+              structured_data
+            )
+          `)
+          .not('published_at', 'is', null);
 
-        if (articleError) throw articleError;
-        setArticle(articleData);
+        if (fetchError) throw fetchError;
+        
+        // Find the article whose title matches the slug
+        const articleData = allArticles?.find(a => generateSlug(a.title) === slug);
+        
+        if (!articleData) {
+          throw new Error('Article not found');
+        }
+        
+        console.log('Raw article data:', articleData);
+        console.log('article_content:', articleData.article_content);
+        console.log('structured_data:', articleData.article_content?.structured_data);
+        console.log('sections:', articleData.article_content?.structured_data?.sections);
+        
+        // Map main article data
+        const mappedArticle = {
+            ...articleData,
+            content: articleData.article_content?.html_content || articleData.content,
+            structured_data: articleData.article_content?.structured_data,
+            image_url: articleData.article_content?.structured_data?.sections?.[0]?.imageUrl || articleData.image_url,
+            excerpt: articleData.article_content?.structured_data?.metaDescription || articleData.excerpt
+        };
+        
+        setArticle(mappedArticle);
 
         // Fetch Related Articles (same category, excluding current)
-        if (articleData && articleData.category_slug) {
+        if (articleData && articleData.niche) {
             const { data: relatedData, error: relatedError } = await supabase
                 .from('articles')
-                .select('*')
-                .eq('category_slug', articleData.category_slug)
-                .neq('id', id)
+                .select(`
+                    *,
+                    article_content (
+                        structured_data
+                    )
+                `)
+                .eq('niche', articleData.niche)
+                .neq('id', articleData.id)
+                .not('published_at', 'is', null)
                 .limit(2);
             
             if (!relatedError) {
-                setRelatedArticles(relatedData);
+                // Map related articles data
+                const mappedRelated = (relatedData || []).map(item => ({
+                    ...item,
+                    image_url: item.article_content?.structured_data?.sections?.[0]?.imageUrl || item.image_url,
+                    excerpt: item.article_content?.structured_data?.metaDescription || item.excerpt
+                }));
+                setRelatedArticles(mappedRelated);
             }
         }
 
@@ -75,10 +124,10 @@ const ArticlePage = () => {
       }
     };
 
-    if (id) {
+    if (slug) {
       fetchArticleAndRelated();
     }
-  }, [id]);
+  }, [slug]);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -123,7 +172,7 @@ const ArticlePage = () => {
     );
   }
 
-  const category = categories.find(c => c.slug === article.category_slug) || { name: 'Article', slug: '#', color: '#A8B8A8' };
+  const category = categories.find(c => c.name === article.niche) || { name: 'Article', slug: '#', color: '#A8B8A8' };
 
   return (
     <>
@@ -199,7 +248,56 @@ const ArticlePage = () => {
                 <p className="lead text-xl text-[#2C2C2C]/90 font-medium italic mb-8 border-l-4 border-[#C97C5C] pl-4">
                   {article.excerpt}
                 </p>
-                {article.content && isLikelyHtml(article.content) ? (
+                {article.structured_data?.sections ? (
+                    <>
+                        {/* Introduction */}
+                        {article.structured_data.introduction && (
+                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.structured_data.introduction) }} className="mb-10" />
+                        )}
+                        
+                        {/* Sections */}
+                        {article.structured_data.sections.map((section, index) => (
+                        <div key={index} className="mb-12">
+                            {section.title && <h2 className="text-2xl font-bold text-[#2C2C2C] mb-6">{section.title}</h2>}
+                            
+                            {section.imageUrl && (
+                                <div className="mb-8 rounded-xl overflow-hidden shadow-lg">
+                                    <img 
+                                        src={section.imageUrl} 
+                                        alt={section.title || article.title} 
+                                        className="w-full h-auto object-cover"
+                                        onError={(e) => { e.target.style.display = 'none'; }}
+                                    />
+                                    {section.imagePrompt && (
+                                        <p className="text-sm text-[#2C2C2C]/60 italic mt-2 text-center">{section.imagePrompt}</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {section.content && (
+                                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(section.content) }} className="mb-6" />
+                            )}
+
+                            {section.tips && section.tips.length > 0 && (
+                                <div className="bg-[#F5F1E8]/50 rounded-xl p-6 border border-[#A8B8A8]/20">
+                                    <h3 className="text-lg font-bold text-[#C97C5C] mb-4 flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-[#C97C5C]"></div>
+                                        Pro Tips
+                                    </h3>
+                                    <ul className="space-y-3">
+                                        {section.tips.map((tip, i) => (
+                                            <li key={i} className="flex gap-3 text-[#2C2C2C]/80">
+                                                <span className="text-[#C97C5C] font-bold">•</span>
+                                                {tip}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                    </>
+                ) : article.content && isLikelyHtml(article.content) ? (
                   <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
                 ) : (
                   (article.content || '').split('\n\n').map((paragraph, idx) => (
@@ -216,7 +314,7 @@ const ArticlePage = () => {
               <h3 className="text-2xl font-bold text-[#2C2C2C] mb-6">Related Articles</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {relatedArticles.map((relArticle) => (
-                  <Link key={relArticle.id} to={`/article/${relArticle.id}`} className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all">
+                  <Link key={relArticle.id} to={`/article/${generateSlug(relArticle.title)}`} className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all">
                      <div className="flex h-32">
                         <div className="w-32 shrink-0">
                           <img 

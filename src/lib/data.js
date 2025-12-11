@@ -1,4 +1,26 @@
-import { Home, Sparkles, Plane, DollarSign, Heart, Scissors, Baby, UtensilsCrossed, TrendingUp, Palette, Book, Coffee } from 'lucide-react';
+import { 
+  Home, 
+  Sparkles, 
+  Plane, 
+  DollarSign, 
+  Heart, 
+  Scissors, 
+  Baby, 
+  UtensilsCrossed, 
+  TrendingUp, 
+  Palette, 
+  Book, 
+  Coffee,
+  Gem,
+  PawPrint,
+  Dumbbell,
+  CalendarHeart,
+  GraduationCap,
+  Flower2,
+  Quote,
+  Laugh,
+  Tv
+} from 'lucide-react';
 
 export const categories = [
   { name: 'Home Decor', slug: 'home-decor', icon: Home, color: '#A8B8A8' },
@@ -13,4 +35,14 @@ export const categories = [
   { name: 'Fashion', slug: 'fashion', icon: Palette, color: '#C97C5C' },
   { name: 'Books', slug: 'books', icon: Book, color: '#A8B8A8' },
   { name: 'Lifestyle', slug: 'lifestyle', icon: Coffee, color: '#C97C5C' },
+  // Additional niches
+  { name: 'Weddings', slug: 'weddings', icon: Gem, color: '#A8B8A8' },
+  { name: 'Pet Care', slug: 'pet-care', icon: PawPrint, color: '#C97C5C' },
+  { name: 'Fitness', slug: 'fitness', icon: Dumbbell, color: '#A8B8A8' },
+  { name: 'Holidays', slug: 'holidays', icon: CalendarHeart, color: '#C97C5C' },
+  { name: 'Education', slug: 'education', icon: GraduationCap, color: '#A8B8A8' },
+  { name: 'Gardening', slug: 'gardening', icon: Flower2, color: '#C97C5C' },
+  { name: 'Quotes & Inspiration', slug: 'quotes-inspiration', icon: Quote, color: '#A8B8A8' },
+  { name: 'Humor', slug: 'humor', icon: Laugh, color: '#C97C5C' },
+  { name: 'Entertainment', slug: 'entertainment', icon: Tv, color: '#A8B8A8' },
 ];

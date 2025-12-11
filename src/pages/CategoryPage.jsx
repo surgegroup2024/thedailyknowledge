@@ -6,6 +6,16 @@ import { ArrowLeft, Clock, User, Loader2 } from 'lucide-react';
 import { categories } from '@/lib/data';
 import { supabase } from '@/lib/customSupabaseClient';
 
+// Generate URL-friendly slug from title
+const generateSlug = (title) => {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+};
+
 const CategoryPage = () => {
   const { slug } = useParams();
   const [articles, setArticles] = useState([]);
@@ -21,13 +31,29 @@ const CategoryPage = () => {
       try {
         const { data, error } = await supabase
           .from('articles')
-          .select('*')
-          .eq('category_slug', slug)
+          .select(`
+            *,
+            article_content (
+              structured_data
+            )
+          `)
+          .eq('niche', category.name)
+          .not('published_at', 'is', null)
           .order('published_at', { ascending: false });
 
         if (error) throw error;
         console.log('Fetched articles for slug:', slug, 'Data:', data);
-        setArticles(data || []);
+        
+        // Map the data to match the component's expectations
+        const mappedArticles = (data || []).map(article => ({
+          ...article,
+          // Map thumbnail from structured_data if available, otherwise fallback to image_url
+          image_url: article.article_content?.structured_data?.sections?.[0]?.imageUrl || article.image_url,
+          // Map excerpt from structured_data if available, otherwise fallback to existing excerpt
+          excerpt: article.article_content?.structured_data?.metaDescription || article.excerpt
+        }));
+        
+        setArticles(mappedArticles);
       } catch (err) {
         console.error('Error fetching articles:', err);
         setError(err.message);
@@ -116,7 +142,7 @@ const CategoryPage = () => {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-[#A8B8A8]/10 group flex flex-col h-full"
                 >
-                  <Link to={`/article/${article.id}`} className="block overflow-hidden h-48 relative">
+                  <Link to={`/article/${generateSlug(article.title)}`} className="block overflow-hidden h-48 relative">
                     <img 
                       alt={article.image_alt || article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -136,7 +162,7 @@ const CategoryPage = () => {
                       </span>
                     </div>
 
-                    <Link to={`/article/${article.id}`} className="block mb-3">
+                    <Link to={`/article/${generateSlug(article.title)}`} className="block mb-3">
                       <h2 className="text-xl font-bold text-[#2C2C2C] group-hover:text-[#C97C5C] transition-colors line-clamp-2">
                         {article.title}
                       </h2>
@@ -147,7 +173,7 @@ const CategoryPage = () => {
                     </p>
 
                     <Link 
-                      to={`/article/${article.id}`} 
+                      to={`/article/${generateSlug(article.title)}`} 
                       className="inline-block text-center w-full py-3 rounded-lg bg-[#F5F1E8] text-[#2C2C2C] font-semibold hover:bg-[#A8B8A8] hover:text-white transition-all duration-300"
                     >
                       Read Article
