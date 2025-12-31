@@ -53,7 +53,7 @@ const ArticlePage = () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch all published articles and find by matching slug
+        // Fetch all articles created by specific user and find by matching slug
         const { data: allArticles, error: fetchError } = await supabase
           .from('articles')
           .select(`
@@ -63,7 +63,7 @@ const ArticlePage = () => {
               structured_data
             )
           `)
-          .not('published_at', 'is', null);
+          .eq('user_id', 'b8eb609e-0826-44e9-b7ae-f5f0b1149f44');
 
         if (fetchError) throw fetchError;
         
@@ -102,7 +102,7 @@ const ArticlePage = () => {
                 `)
                 .eq('niche', articleData.niche)
                 .neq('id', articleData.id)
-                .not('published_at', 'is', null)
+                .eq('user_id', 'b8eb609e-0826-44e9-b7ae-f5f0b1149f44')
                 .limit(2);
             
             if (!relatedError) {

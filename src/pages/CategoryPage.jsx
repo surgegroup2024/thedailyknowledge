@@ -38,8 +38,8 @@ const CategoryPage = () => {
             )
           `)
           .eq('niche', category.name)
-          .not('published_at', 'is', null)
-          .order('published_at', { ascending: false });
+          .eq('user_id', 'b8eb609e-0826-44e9-b7ae-f5f0b1149f44')
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
         console.log('Fetched articles for slug:', slug, 'Data:', data);
