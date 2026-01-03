@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Clock, User, Loader2 } from 'lucide-react';
 import { categories } from '@/lib/data';
-import { supabase } from '@/lib/customSupabaseClient';
+import { supabase, articlesOwnerUserId } from '@/lib/customSupabaseClient';
 
 // Generate URL-friendly slug from title
 const generateSlug = (title) => {
@@ -29,6 +29,7 @@ const CategoryPage = () => {
       setLoading(true);
       setError(null);
       try {
+        const nicheFilter = category?.slug === 'custom' ? 'Custom' : category?.name;
         const { data, error } = await supabase
           .from('articles')
           .select(`
@@ -37,9 +38,10 @@ const CategoryPage = () => {
               structured_data
             )
           `)
-          .eq('niche', category.name)
-          .eq('user_id', 'b8eb609e-0826-44e9-b7ae-f5f0b1149f44')
-          .order('created_at', { ascending: false });
+          .eq('niche', nicheFilter)
+          .eq('user_id', articlesOwnerUserId)
+          .not('published_at', 'is', null)
+          .order('published_at', { ascending: false });
 
         if (error) throw error;
         console.log('Fetched articles for slug:', slug, 'Data:', data);

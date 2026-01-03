@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const articlesOwnerUserId = import.meta.env.VITE_ARTICLES_OWNER_USER_ID || 'e8fb5707-c843-4e6e-a4d6-5f3eed0d53a7'
 
 let supabase
 
@@ -38,4 +39,4 @@ if (url && anonKey) {
   }
 }
 
-export { supabase }
+export { supabase, articlesOwnerUserId }

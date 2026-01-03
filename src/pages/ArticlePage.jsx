@@ -6,7 +6,7 @@ import { ArrowLeft, Clock, User, Share2, Bookmark, Loader2 } from 'lucide-react'
 import { categories } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import { supabase, articlesOwnerUserId } from '@/lib/customSupabaseClient';
 
 const isLikelyHtml = (s) => typeof s === 'string' && /<\/?[a-z][\s\S]*>/i.test(s);
 
@@ -63,7 +63,8 @@ const ArticlePage = () => {
               structured_data
             )
           `)
-          .eq('user_id', 'b8eb609e-0826-44e9-b7ae-f5f0b1149f44');
+          .eq('user_id', articlesOwnerUserId)
+          .not('published_at', 'is', null);
 
         if (fetchError) throw fetchError;
         
@@ -102,7 +103,8 @@ const ArticlePage = () => {
                 `)
                 .eq('niche', articleData.niche)
                 .neq('id', articleData.id)
-                .eq('user_id', 'b8eb609e-0826-44e9-b7ae-f5f0b1149f44')
+                .eq('user_id', articlesOwnerUserId)
+                .not('published_at', 'is', null)
                 .limit(2);
             
             if (!relatedError) {
@@ -172,7 +174,10 @@ const ArticlePage = () => {
     );
   }
 
-  const category = categories.find(c => c.name === article.niche) || { name: 'Article', slug: '#', color: '#A8B8A8' };
+  const normalizedNiche = article.niche === 'Custom' ? 'custom' : article.niche;
+  const category = categories.find(
+    c => c.name === normalizedNiche || c.slug === normalizedNiche
+  ) || { name: 'Article', slug: '#', color: '#A8B8A8' };
 
   return (
     <>

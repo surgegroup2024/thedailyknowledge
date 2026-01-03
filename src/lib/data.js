@@ -45,4 +45,6 @@ export const categories = [
   { name: 'Quotes & Inspiration', slug: 'quotes-inspiration', icon: Quote, color: '#A8B8A8' },
   { name: 'Humor', slug: 'humor', icon: Laugh, color: '#C97C5C' },
   { name: 'Entertainment', slug: 'entertainment', icon: Tv, color: '#A8B8A8' },
+  // Custom/misc niche
+  { name: 'Misc', slug: 'custom', icon: Sparkles, color: '#A8B8A8' },
 ];
