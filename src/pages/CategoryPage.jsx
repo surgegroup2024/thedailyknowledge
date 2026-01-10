@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Clock, User, Loader2 } from 'lucide-react';
 import { categories } from '@/lib/data';
-import { supabase, articlesOwnerUserId } from '@/lib/customSupabaseClient';
+import { supabase } from '@/lib/customSupabaseClient';
 
 // Generate URL-friendly slug from title
 const generateSlug = (title) => {
@@ -39,7 +39,6 @@ const CategoryPage = () => {
             )
           `)
           .eq('niche', nicheFilter)
-          .eq('user_id', articlesOwnerUserId)
           .not('published_at', 'is', null)
           .order('published_at', { ascending: false });
 

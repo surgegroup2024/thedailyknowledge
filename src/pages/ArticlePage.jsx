@@ -6,7 +6,7 @@ import { ArrowLeft, Clock, User, Share2, Bookmark, Loader2 } from 'lucide-react'
 import { categories } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase, articlesOwnerUserId } from '@/lib/customSupabaseClient';
+import { supabase } from '@/lib/customSupabaseClient';
 
 const isLikelyHtml = (s) => typeof s === 'string' && /<\/?[a-z][\s\S]*>/i.test(s);
 
@@ -53,37 +53,38 @@ const ArticlePage = () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch all articles created by specific user and find by matching slug
-        const { data: allArticles, error: fetchError } = await supabase
+        // Step 1: Fetch just article titles to find the matching slug (lightweight query)
+        const { data: articlesList, error: listError } = await supabase
+          .from('articles')
+          .select('id, title, niche')
+          .not('published_at', 'is', null);
+
+        if (listError) throw listError;
+        
+        // Find the article whose title matches the slug
+        const matchedArticle = articlesList?.find(a => generateSlug(a.title) === slug);
+        
+        if (!matchedArticle) {
+          throw new Error('Article not found');
+        }
+
+        // Step 2: Fetch full article data for just this one article
+        const { data: articleData, error: fetchError } = await supabase
           .from('articles')
           .select(`
             *,
             article_content (
-              html_content,
               structured_data
             )
           `)
-          .eq('user_id', articlesOwnerUserId)
-          .not('published_at', 'is', null);
+          .eq('id', matchedArticle.id)
+          .single();
 
         if (fetchError) throw fetchError;
-        
-        // Find the article whose title matches the slug
-        const articleData = allArticles?.find(a => generateSlug(a.title) === slug);
-        
-        if (!articleData) {
-          throw new Error('Article not found');
-        }
-        
-        console.log('Raw article data:', articleData);
-        console.log('article_content:', articleData.article_content);
-        console.log('structured_data:', articleData.article_content?.structured_data);
-        console.log('sections:', articleData.article_content?.structured_data?.sections);
         
         // Map main article data
         const mappedArticle = {
             ...articleData,
-            content: articleData.article_content?.html_content || articleData.content,
             structured_data: articleData.article_content?.structured_data,
             image_url: articleData.article_content?.structured_data?.sections?.[0]?.imageUrl || articleData.image_url,
             excerpt: articleData.article_content?.structured_data?.metaDescription || articleData.excerpt
@@ -103,7 +104,6 @@ const ArticlePage = () => {
                 `)
                 .eq('niche', articleData.niche)
                 .neq('id', articleData.id)
-                .eq('user_id', articlesOwnerUserId)
                 .not('published_at', 'is', null)
                 .limit(2);
             
